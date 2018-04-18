@@ -1,0 +1,9 @@
+<launch>
+  <arg name="joy_config_filepath" default="$(find rpi_abb_irc5_egm_simple_teleop)/config/six_dof_joy_teleop.config.yaml"/>
+  <include file="$(find teleop_twist_joy)/launch/teleop.launch">
+    <arg name="config_filepath" value="$(arg joy_config_filepath)"/>
+  </include>
+
+  <node name="$(anon teleop)" pkg="rpi_abb_irc5_egm_simple_teleop" type="rpi_abb_irc5_egm_simple_teleop"/>
+  
+</launch>

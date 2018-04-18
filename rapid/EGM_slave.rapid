@@ -1,0 +1,57 @@
+MODULE EGM_slave
+    
+    VAR egmident egmID1;
+    VAR egmstate egmSt1;
+    
+    CONST egm_minmax egm_minmax_lin1:=[-1,1]; !in mm
+    CONST egm_minmax egm_minmax_rot1:=[-2,2];! in degees
+    CONST egm_minmax egm_minmax_joint1:=[-0.5,0.5];
+
+    !CONST robtarget p20:=[[34,-499,123],[0.000494947,0.662278052,-0.749217059,-0.007831731],[0,0,-1,0],[9E9,9E9,9E9,9E9,9E9,9E9]];
+    CONST jointtarget p20:=[[20, 20, 20, 20, 20, 20],[9E9,9E9,9E9,9E9,9E9,9E9]];
+    
+    PERS tooldata UISpenholder:=[TRUE,[[0,0,114.25],[1,0,0,0]],[1,[-0.095984607,0.082520613,38.69176324],[1,0,0,0],0,0,0]];
+    TASK PERS wobjdata wobjBordN:=[FALSE,TRUE,"",[[0,0,0],[1,0,0,0]],[[150,-500,8],[0.707106781,0,0,-0.707106781]]];
+    
+    VAR pose posecorTable:=[[0,0,0],[1,0,0,0]];
+    VAR pose posesenTable:=[[0,0,0],[1,0,0,0]];
+
+    PROC main()
+        ! Move to start position. Fine point is demanded.
+        !MoveJ p20,v500,fine,UISpenholder;
+        !MoveAbsJ p20,v500,fine,UISpenholder;
+        testuc_UDP; 
+    ENDPROC
+  
+    
+    PROC testuc_UDP()
+        EGMReset egmID1;
+        EGMGetId egmID1;
+        egmSt1 := EGMGetState(egmID1);
+        TPWrite "EGM state: "\Num := egmSt1;
+        
+        IF egmSt1 <= EGM_STATE_CONNECTED THEN
+            ! Set up the EGM data source: UdpUc server using device "EGMsensor:"and configuration "default"
+            EGMSetupUC ROB_1, egmID1, "default", "UCdevice:" \Joint;
+        ENDIF
+        
+        !Which program to run
+        runEGM;
+              
+        IF egmSt1 = EGM_STATE_CONNECTED THEN
+            TPWrite "Reset EGM instance egmID1";
+            EGMReset egmID1; 
+        ENDIF  
+    ENDPROC
+              
+        PROC runEGM()
+            
+            EGMActJoint egmID1 \Tool:=UISpenholder \WObj:=wobj0, \J1:=egm_minmax_joint1 \J2:=egm_minmax_joint1 \J3:=egm_minmax_joint1
+            \J4:=egm_minmax_joint1 \J5:=egm_minmax_joint1 \J6:=egm_minmax_joint1 \LpFilter:=100 \Samplerate:=4 \MaxPosDeviation:=360 \MaxSpeedDeviation:=100;
+            
+            EGMRunJoint egmID1, EGM_STOP_HOLD \J1 \J2 \J3 \J4 \J5 \J6 \CondTime:=2000000 \RampInTime:=0.05 \PosCorrGain:=1;
+            
+            egmSt1:=EGMGetState(egmID1);
+        ENDPROC
+ 
+ENDMODULE

@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2018, Rensselaer Polytechnic Institute, Wason Technology LLC
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the Rensselaer Polytechnic Institute, nor Wason 
+#       Technology LLC, nor the names of its contributors may be used to 
+#       endorse or promote products derived from this software without 
+#       specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+
+
+from geometry_msgs.msg import Twist
+import rospy
+import general_robotics_toolbox as rox
+from general_robotics_toolbox import urdf
+import numpy as np
+import time
+from rpi_abb_irc5 import EGM
+
+cmd_vel = np.zeros(6)
+
+def joy_teleop_callback(data):
+    cmd_vel[0] = data.angular.x
+    cmd_vel[1] = data.angular.y
+    cmd_vel[2] = data.angular.z
+    cmd_vel[3] = data.linear.x
+    cmd_vel[4] = data.linear.y
+    cmd_vel[5] = data.linear.z
+
+def main():
+    
+    ts = 4e-3
+    max_joint_vel = np.deg2rad(10)*np.ones(6)
+    
+    robot = urdf.robot_from_xacro_file('urdf/irb6640_180_255.xacro',\
+                                      package='rpi_abb_irb6640_180_255_support')
+    
+    rospy.init_node('test_egm_teleop')
+    
+    rospy.Subscriber("cmd_vel", Twist, joy_teleop_callback)
+    
+    egm = EGM()
+    
+    command_joints = None
+    
+    current_joints = np.zeros(6)
+    try:
+        while True:
+            
+            res, state = egm.receive_from_robot(0.01)
+            if res:        
+                current_joints[:] = np.array(state.joint_angles)            
+                J = rox.robotjacobian(robot, current_joints)
+                
+                if command_joints is None:
+                    command_joints = current_joints                
+                
+                cmd_joint_vel = np.linalg.pinv(J).dot(cmd_vel)
+                cmd_joint_vel = np.clip(cmd_joint_vel, -max_joint_vel, max_joint_vel)
+                command_joints = command_joints + cmd_joint_vel.dot(ts)
+                               
+                egm.send_to_robot(command_joints)
+    except KeyboardInterrupt:
+        pass                        
+
+if __name__ == '__main__':
+    main()

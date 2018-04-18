@@ -1,0 +1,17 @@
+axis_linear:
+    x: 0
+    y: 1
+    z: 4
+scale_linear:
+    x: -0.15
+    y: 0.15
+    z: 0.05
+axis_angular:
+    roll: 7
+    pitch: 6
+    yaw: 3
+scale_angular:
+    roll: 0.087
+    pitch: 0.175
+    yaw: 0.087
+enable_button: 5
