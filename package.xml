@@ -2,7 +2,7 @@
 <package format="2">
   <name>rpi_abb_irc5_egm_simple_teleop</name>
   <version>0.1.0</version>
-  <description>This package provides basic teleoperative control of an ABB industrial robot using the IRC5 Externally Guided Motion interface. It requires a standard wired Xbox 360 controller.</description>
+  <description>This package provides basic teleoperative control of an ABB industrial robot using the IRC5 Externally Guided Motion interface. It requires a standard wired Xbox 360 controller. This branch adds support for a MoveIt! FollowJointTrajectoryAction interface.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -57,6 +57,8 @@
   <exec_depend>rpi_abb_irc5</exec_depend>
   <exec_depend>rpi_abb_irb6640_180_255_support</exec_depend>
   <exec_depend>rpi_general_robotics_toolbox_py</exec_depend>
+  <exec_depend>moveit</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

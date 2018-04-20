@@ -35,8 +35,11 @@ from general_robotics_toolbox import urdf
 import numpy as np
 import time
 from rpi_abb_irc5 import EGM
+from sensor_msgs.msg import Joy
+from follow_joint_trajectory_action_adapter import FollowJointTrajectoryActionAdapter
 
 cmd_vel = np.zeros(6)
+trajectory_vel = 0
 
 def joy_teleop_callback(data):
     cmd_vel[0] = data.angular.x
@@ -45,6 +48,16 @@ def joy_teleop_callback(data):
     cmd_vel[3] = data.linear.x
     cmd_vel[4] = data.linear.y
     cmd_vel[5] = data.linear.z
+    
+def joy_callback(data):
+    global trajectory_vel
+
+    if data.buttons[0] != 0:
+        trajectory_vel = 0.25 * data.axes[1] 
+    #elif data.buttons[1] != 0:
+        #trajectory_vel = data.axes[1]
+    else:
+        trajectory_vel = 0
 
 def main():
     
@@ -57,28 +70,42 @@ def main():
     rospy.init_node('test_egm_teleop')
     
     rospy.Subscriber("cmd_vel", Twist, joy_teleop_callback)
+    rospy.Subscriber("joy", Joy, joy_callback)
     
     egm = EGM()
     
     command_joints = None
-    
     current_joints = np.zeros(6)
+    
+    trajectory = FollowJointTrajectoryActionAdapter()
+    
+    rate = rospy.Rate(250)
+    
     try:
         while True:
             
             res, state = egm.receive_from_robot(0.01)
             if res:        
-                current_joints[:] = np.array(state.joint_angles)            
-                J = rox.robotjacobian(robot, current_joints)
+                current_joints[:] = np.array(state.joint_angles)
                 
                 if command_joints is None:
-                    command_joints = current_joints                
+                    command_joints=np.array(current_joints)
+                          
+                J = rox.robotjacobian(robot, current_joints)
                 
-                cmd_joint_vel = np.linalg.pinv(J).dot(cmd_vel)
-                cmd_joint_vel = np.clip(cmd_joint_vel, -max_joint_vel, max_joint_vel)
-                command_joints = command_joints + cmd_joint_vel.dot(ts)
+                trajectory.current_joint_angles = current_joints
+                                
+                if trajectory_vel != 0:
+                    res, command_joints1 = trajectory.increment_trajectory_time(4e-3 * trajectory_vel)
+                    if res:            
+                        command_joints = command_joints1
+                else:
+                    cmd_joint_vel = np.linalg.pinv(J).dot(cmd_vel)
+                    cmd_joint_vel = np.clip(cmd_joint_vel, -max_joint_vel, max_joint_vel)
+                    command_joints = command_joints + cmd_joint_vel.dot(ts)
                                
                 egm.send_to_robot(command_joints)
+            rate.sleep()
     except KeyboardInterrupt:
         pass                        
 

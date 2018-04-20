@@ -4,6 +4,13 @@
     <arg name="config_filepath" value="$(arg joy_config_filepath)"/>
   </include>
 
-  <node name="$(anon teleop)" pkg="rpi_abb_irc5_egm_simple_teleop" type="rpi_abb_irc5_egm_simple_teleop"/>
+  <node name="$(anon teleop)" pkg="rpi_abb_irc5_egm_simple_teleop" type="rpi_abb_irc5_egm_simple_teleop" required="true"/>
+
+  <param name="move_group/trajectory_execution/allowed_execution_duration_scaling" value="4.0" />
+  <param name="move_group/trajectory_execution/execution_duration_monitoring" value="false" />
+
+  <include file="$(find rpi_abb_irb6640_180_255_moveit_config)/launch/moveit_planning_execution.launch">
+    <arg name="start_interface" value="false"/>
+  </include>
   
 </launch>
