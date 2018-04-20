@@ -56,6 +56,7 @@
   <exec_depend>teleop_twist_joy</exec_depend>
   <exec_depend>rpi_abb_irc5</exec_depend>
   <exec_depend>rpi_abb_irb6640_180_255_support</exec_depend>
+  <exec_depend>rpi_abb_irb6640_180_255_moveit_config</exec_depend>
   <exec_depend>rpi_general_robotics_toolbox_py</exec_depend>
   <exec_depend>moveit</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
