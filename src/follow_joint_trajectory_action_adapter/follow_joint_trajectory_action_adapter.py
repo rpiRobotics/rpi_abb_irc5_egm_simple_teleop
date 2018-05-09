@@ -2,7 +2,6 @@ import rospy
 import numpy as np
 from scipy.interpolate import PchipInterpolator
 import threading
-from numpy import interp
 
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryFeedback, FollowJointTrajectoryResult
 from sensor_msgs.msg import JointState
@@ -20,7 +19,7 @@ class FollowJointTrajectoryActionAdapter(object):
         self._joint_pub = rospy.Publisher('joint_states', JointState, queue_size=10)
         self._current_joint_angles=[0,0,0,0,0,0]
         
-        self._lock = threading.Lock()
+        self._lock = self._action.lock
         
         self._trajectory_valid = False
         self._trajectory_interp = None
@@ -63,13 +62,13 @@ class FollowJointTrajectoryActionAdapter(object):
         
         with self._lock:
             self._reset_trajectory()
-        
+            gh.set_canceled()
         
     def _publish_joint_state(self, joint_angles):
         js = JointState()        
         js.header.stamp = rospy.Time.now()
         js.name = ['joint_1', 'joint_2', 'joint_3', 'joint_4', 'joint_5', 'joint_6']      
-        js.position = self._current_joint_angles  
+        js.position = joint_angles  
         js.velocity = [0,0,0,0,0,0]
         js.effort = [0,0,0,0,0,0]
         self._joint_pub.publish(js)
@@ -85,7 +84,9 @@ class FollowJointTrajectoryActionAdapter(object):
         if self._trajectory_valid:
             #If the specified trajectory is too far away from current joint angles, abort it
             trajectory_angles=self._get_trajectory_joint_angles(self._trajectory_t)
-            if (np.any(np.abs(trajectory_angles-joint_angles) > np.deg2rad(5))):
+            #TODO: improve trajectory error tracking
+            if (np.any(np.abs(trajectory_angles-joint_angles) > np.deg2rad(45))):
+                print "Trajectory aborted due to tracking error: " + str(np.rad2deg(trajectory_angles-joint_angles)) 
                 self._abort_trajectory()
             else:            
                 fb = FollowJointTrajectoryFeedback()
