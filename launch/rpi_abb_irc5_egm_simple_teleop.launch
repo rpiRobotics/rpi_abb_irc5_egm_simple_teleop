@@ -1,10 +1,12 @@
 <launch>
   <arg name="joy_config_filepath" default="$(find rpi_abb_irc5_egm_simple_teleop)/config/six_dof_joy_teleop.config.yaml"/>
+  <arg name="joy_dev" default="/dev/input/js0" />
   <include file="$(find teleop_twist_joy)/launch/teleop.launch">
     <arg name="config_filepath" value="$(arg joy_config_filepath)"/>
+    <arg name="joy_dev" value="$(arg joy_dev)"/>
   </include>
 
-  <node name="$(anon teleop)" pkg="rpi_abb_irc5_egm_simple_teleop" type="rpi_abb_irc5_egm_simple_teleop" required="true"/>
+  <node name="rpi_abb_irc5_egm_simple_teleop" pkg="rpi_abb_irc5_egm_simple_teleop" type="rpi_abb_irc5_egm_simple_teleop" required="true"/>
 
   <param name="move_group/trajectory_execution/allowed_execution_duration_scaling" value="4.0" />
   <param name="move_group/trajectory_execution/execution_duration_monitoring" value="false" />
