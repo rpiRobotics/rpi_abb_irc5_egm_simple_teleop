@@ -93,8 +93,10 @@ def main():
     ts = 4e-3
     max_joint_vel = np.deg2rad(10)*np.ones(6)
     
-    robot = urdf.robot_from_xacro_file('urdf/irb6640_180_255.xacro',\
-                                      package='rpi_abb_irb6640_180_255_support')
+    #robot = urdf.robot_from_xacro_file('urdf/irb6640_180_255.xacro',\
+    #                                  package='rpi_abb_irb6640_180_255_support')
+    
+    robot = urdf.robot_from_parameter_server()
     
     rospy.init_node('test_egm_teleop')
     
