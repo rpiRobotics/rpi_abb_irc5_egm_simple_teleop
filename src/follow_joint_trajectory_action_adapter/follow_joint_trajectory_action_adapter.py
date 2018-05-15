@@ -134,7 +134,8 @@ class FollowJointTrajectoryActionAdapter(object):
         
         if t >= self._trajectory_max_t:
             trajectory_angles = self._get_trajectory_joint_angles(t)
-            self._trajectory_complete()
+            if (np.all(np.abs(self._current_joint_angles - trajectory_angles) < np.deg2rad(0.1))):
+                self._trajectory_complete()
             return True, trajectory_angles
         
         return True, self._get_trajectory_joint_angles(t)

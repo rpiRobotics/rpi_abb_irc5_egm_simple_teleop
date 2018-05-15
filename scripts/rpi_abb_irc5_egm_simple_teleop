@@ -39,7 +39,9 @@ from sensor_msgs.msg import Joy, JointState
 from follow_joint_trajectory_action_adapter import FollowJointTrajectoryActionAdapter
 
 cmd_vel = np.zeros(6)
+joint_cmd_vel = np.zeros(6)
 trajectory_vel = 0
+teleop_mode = 0
 
 def joy_teleop_callback(data):
     cmd_vel[0] = data.angular.x
@@ -51,17 +53,31 @@ def joy_teleop_callback(data):
     
 def joy_callback(data):
     global trajectory_vel
+    global teleop_mode
+    global joint_cmd_vel
+    
 
     if data.buttons[0] != 0:
-        trajectory_vel = 0.25 * data.axes[1] 
+        trajectory_vel = 0.25 * data.axes[1]
+        teleop_mode = 3 
     elif data.buttons[1] != 0:
         trajectory_vel = data.axes[1]
+        teleop_mode = 3
     elif data.buttons[2] != 0:
         trajectory_vel = 0.25
+        teleop_mode = 3
     elif data.buttons[3] != 0:
         trajectory_vel = 1
+        teleop_mode = 3
+    elif data.buttons[4] != 0:
+        joint_cmd_vel = np.array([data.axes[0], data.axes[1], data.axes[4], \
+                                  data.axes[6], data.axes[7], data.axes[3]])*np.deg2rad(5)
+        teleop_mode = 1
+    elif data.buttons[5] != 0:
+        teleop_mode = 2
     else:
         trajectory_vel = 0
+        teleop_mode = 0
 
 def fill_joint_state_msg(joint_angles):
     js = JointState()        
@@ -115,14 +131,16 @@ def main():
                 
                 trajectory.current_joint_angles = current_joints
                                 
-                if trajectory_vel != 0:
-                    res, command_joints1 = trajectory.increment_trajectory_time(4e-3 * trajectory_vel)
+                if teleop_mode == 3:
+                    res, command_joints1 = trajectory.increment_trajectory_time(ts * trajectory_vel)
                     if res:            
                         command_joints = command_joints1
-                else:
+                elif teleop_mode == 2:
                     cmd_joint_vel = np.linalg.pinv(J).dot(cmd_vel)
                     cmd_joint_vel = np.clip(cmd_joint_vel, -max_joint_vel, max_joint_vel)
                     command_joints = command_joints + cmd_joint_vel.dot(ts)
+                elif teleop_mode == 1:
+                    command_joints = command_joints + joint_cmd_vel.dot(ts)
                                
                 egm.send_to_robot(command_joints)
                 
